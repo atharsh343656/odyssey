@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Manager - ODYSSEY 2K26 | Marthandam College of Engineering and Technology</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.07);
+            --primary: #FF0055;
+            --primary-glow: rgba(255,0,85,0.4);
+            --secondary: #00F0FF;
+            --accent: #B026FF;
+            --accent-glow: rgba(176,38,255,0.4);
+            --green: #00ff87;
+            --gold: #FFD700;
+            --text: #fff;
+            --muted: #a0a0b0;
+            --font: 'Outfit', sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+        body::before { content:''; position:fixed; top:-200px; left:-200px; width:600px; height:600px; border-radius:50%; background:var(--primary); filter:blur(200px); opacity:0.07; pointer-events:none; z-index:0; }
+
+        /* TOP BAR */
+        .topbar { background:rgba(5,5,5,0.9); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:16px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+        .topbar-brand { display:flex; align-items:center; gap:12px; }
+        .brand-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--primary),var(--accent)); border-radius:10px; display:flex; align-items:center; justify-content:center; }
+        .brand-icon i { width:20px; height:20px; color:#fff; }
+        .brand-text h1 { font-size:1.05rem; font-weight:700; }
+        .brand-text p { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+        .topbar-right { display:flex; align-items:center; gap:10px; }
+        .badge { display:inline-flex; align-items:center; gap:6px; padding:5px 13px; border-radius:20px; font-size:0.78rem; font-weight:600; }
+        .badge-live { background:rgba(0,255,135,0.1); border:1px solid rgba(0,255,135,0.25); color:var(--green); }
+        .badge-admin { background:rgba(176,38,255,0.12); border:1px solid rgba(176,38,255,0.3); color:var(--accent); }
+        .badge .dot { width:7px; height:7px; border-radius:50%; animation:pulse 1.5s infinite; }
+        .badge-live .dot { background:var(--green); }
+        .badge-admin .dot { background:var(--accent); }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+        /* LAYOUT */
+        .layout { display:grid; grid-template-columns:230px 1fr; min-height:calc(100vh - 73px); position:relative; z-index:1; }
+
+        /* SIDEBAR */
+        .sidebar { background:rgba(0,0,0,0.4); border-right:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:4px; }
+        .sidebar-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:var(--muted); margin:14px 0 5px 8px; }
+        .sidebar-btn { display:flex; align-items:center; gap:11px; padding:10px 13px; border-radius:10px; background:none; border:none; color:var(--muted); font-family:var(--font); font-size:0.9rem; font-weight:500; cursor:pointer; transition:all 0.2s; text-align:left; width:100%; }
+        .sidebar-btn i { width:17px; height:17px; flex-shrink:0; }
+        .sidebar-btn:hover { background:var(--surface); color:white; }
+        .sidebar-btn.active { background:linear-gradient(135deg,rgba(255,0,85,0.15),rgba(176,38,255,0.1)); border:1px solid rgba(255,0,85,0.25); color:white; }
+        .sidebar-btn.active i { color:var(--primary); }
+        .sidebar-btn.locked { opacity:0.45; cursor:default; }
+        .sidebar-btn.locked:hover { background:none; color:var(--muted); }
+        .sidebar-btn.admin-only { display:none; }
+
+        /* MAIN */
+        .main-area { padding:30px; display:flex; flex-direction:column; gap:22px; }
+        .panel { display:none; }
+        .panel.active { display:flex; flex-direction:column; gap:22px; }
+        .panel-header h2 { font-size:1.7rem; font-weight:800; }
+        .panel-header p { color:var(--muted); font-size:0.9rem; margin-top:4px; }
+
+        /* CARD */
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:22px; backdrop-filter:blur(10px); }
+        .card-title { font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--secondary); margin-bottom:16px; }
+
+        /* STATS */
+        .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; }
+        .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; text-align:center; }
+        .stat-card .num { font-size:2.4rem; font-weight:900; line-height:1; margin-bottom:5px; }
+        .stat-card .lbl { font-size:0.74rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+        .stat-card.c-blue .num { color:var(--secondary); }
+        .stat-card.c-green .num { color:var(--green); }
+        .stat-card.c-red .num { color:var(--primary); }
+        .stat-card.c-purple .num { color:var(--accent); }
+
+        /* TABLE */
+        .styled-table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+        .styled-table th { padding:11px 15px; text-align:left; background:rgba(255,255,255,0.02); color:var(--secondary); font-size:0.74rem; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid var(--border); }
+        .styled-table td { padding:13px 15px; border-bottom:1px solid rgba(255,255,255,0.04); }
+        .styled-table tr:hover td { background:rgba(255,255,255,0.02); }
+        .styled-table tr.ceremony td { color:var(--gold); }
+
+        .status-dot { display:inline-flex; align-items:center; gap:5px; font-size:0.78rem; font-weight:600; }
+        .status-dot span { width:7px; height:7px; border-radius:50%; }
+        .status-dot.pub { color:var(--green); } .status-dot.pub span { background:var(--green); }
+        .status-dot.pend { color:var(--muted); } .status-dot.pend span { background:var(--muted); }
+
+        /* FORM */
+        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+        .form-group { display:flex; flex-direction:column; gap:7px; }
+        .form-group label { font-size:0.78rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+        .form-group select, .form-group input { background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:8px; padding:11px 13px; color:white; font-family:var(--font); font-size:0.9rem; transition:border-color 0.2s,box-shadow 0.2s; width:100%; }
+        .form-group select:focus, .form-group input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 10px var(--primary-glow); }
+        .form-group select option { background:#111; }
+        .form-group select optgroup { background:#000; color:var(--secondary); }
+        .sec-title { font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--muted); padding:16px 0 9px; border-top:1px solid var(--border); margin-top:4px; }
+
+        /* BUTTONS */
+        .btn { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; border-radius:8px; border:none; font-family:var(--font); font-size:0.88rem; font-weight:700; cursor:pointer; transition:all 0.2s; text-transform:uppercase; letter-spacing:0.5px; text-decoration:none; }
+        .btn i { width:15px; height:15px; }
+        .btn-primary { background:linear-gradient(135deg,var(--primary),#FF4D85); color:white; box-shadow:0 4px 14px var(--primary-glow); }
+        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 22px var(--primary-glow); }
+        .btn-ghost { background:var(--surface); border:1px solid var(--border); color:var(--muted); }
+        .btn-ghost:hover { background:rgba(255,255,255,0.07); color:white; }
+        .btn-danger { background:rgba(255,0,85,0.1); border:1px solid rgba(255,0,85,0.3); color:var(--primary); }
+        .btn-danger:hover { background:rgba(255,0,85,0.2); }
+        .btn-success { background:rgba(0,255,135,0.1); border:1px solid rgba(0,255,135,0.3); color:var(--green); }
+        .btn-sm { padding:6px 11px; font-size:0.78rem; }
+
+        /* PRIZE */
+        .prize-block { background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:14px; }
+        .prize-block-title { font-size:0.97rem; font-weight:700; color:white; margin-bottom:10px; padding-bottom:9px; border-bottom:1px solid var(--border); }
+        .prize-row { display:flex; align-items:center; gap:14px; padding:9px 0; font-size:0.88rem; }
+        .prize-row + .prize-row { border-top:1px solid rgba(255,255,255,0.04); }
+        .prize-medal { font-size:1.3rem; width:26px; text-align:center; }
+        .prize-info .p-name { font-weight:700; }
+        .prize-info .p-college { color:var(--muted); font-size:0.8rem; }
+
+        /* LOCK */
+        .lock-screen { display:flex; flex-direction:column; align-items:center; gap:18px; padding:55px 20px; text-align:center; }
+        .lock-icon-wrap { width:76px; height:76px; background:linear-gradient(135deg,rgba(255,0,85,0.13),rgba(176,38,255,0.1)); border:1px solid rgba(255,0,85,0.22); border-radius:18px; display:flex; align-items:center; justify-content:center; }
+        .lock-icon-wrap i { width:34px; height:34px; color:var(--primary); }
+        .lock-screen h3 { font-size:1.35rem; font-weight:800; }
+        .lock-screen p { color:var(--muted); max-width:320px; line-height:1.6; font-size:0.9rem; }
+
+        /* EXPORT */
+        .export-preview { font-family:var(--mono); font-size:0.82rem; background:rgba(0,0,0,0.5); border:1px solid var(--border); border-radius:12px; padding:18px; color:var(--green); white-space:pre-wrap; line-height:1.8; }
+
+        /* EMPTY */
+        .empty-state { text-align:center; padding:38px 20px; color:var(--muted); }
+        .empty-state i { width:44px; height:44px; margin:0 auto 13px; display:block; }
+        .empty-state h3 { font-size:1.05rem; color:white; margin-bottom:5px; }
+
+        /* MODAL */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:999; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal-box { background:#111; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:28px; width:min(500px,90vw); }
+        .modal-box h3 { margin-bottom:18px; font-size:1.15rem; }
+        .modal-actions { display:flex; gap:10px; margin-top:20px; }
+
+        /* BACK LINK */
+        .back-link { display:inline-flex; align-items:center; gap:6px; color:var(--muted); text-decoration:none; font-size:0.88rem; transition:color 0.2s; }
+        .back-link:hover { color:white; }
+        .back-link i { width:15px; height:15px; }
+
+        /* RESPONSIVE */
+        @media (max-width:768px) {
+            .layout { grid-template-columns:1fr; }
+            .sidebar { flex-direction:row; overflow-x:auto; padding:14px; border-right:none; border-bottom:1px solid var(--border); }
+            .sidebar-label { display:none; }
+            .sidebar-btn { flex-direction:column; gap:3px; font-size:0.68rem; padding:9px; min-width:65px; }
+            .main-area { padding:18px; }
+            .form-grid { grid-template-columns:1fr; }
+            .stats-row { grid-template-columns:repeat(2,1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="topbar-brand">
+        <div class="brand-icon"><i data-lucide="layout-dashboard"></i></div>
+        <div class="brand-text">
+            <h1>ODYSSEY 2K26 — Event Manager</h1>
+            <p>Marthandam College of Engineering and Technology</p>
+        </div>
+    </div>
+    <div class="topbar-right" id="topbar-right">
+        <div class="badge badge-live"><span class="dot"></span> Live</div>
+        <a href="index.html" class="back-link"><i data-lucide="arrow-left"></i> Main Site</a>
+    </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <button class="sidebar-btn active" data-panel="dashboard"><i data-lucide="layout-grid"></i> Dashboard</button>
+        <span class="sidebar-label">Results</span>
+        <button class="sidebar-btn" data-panel="prizes"><i data-lucide="award"></i> Prize List</button>
+        <button class="sidebar-btn" data-panel="export"><i data-lucide="file-text"></i> Export</button>
+        <span class="sidebar-label admin-only" id="lbl-admin">Admin Tools</span>
+        <button class="sidebar-btn admin-only" id="edit-events-btn" data-panel="edit-events"><i data-lucide="list-plus"></i> Edit Events</button>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-area">
+
+        <!-- DASHBOARD -->
+        <div class="panel active" id="panel-dashboard">
+            <div class="panel-header"><h2>Dashboard</h2><p>Overview of ODYSSEY 2K26 — 26 March 2026</p></div>
+            <div class="stats-row" id="stats-row"></div>
+            <div class="card">
+                <div class="card-title">🏆 Latest Published Results</div>
+                <div id="dashboard-latest"></div>
+            </div>
+        </div>
+
+        <!-- PRIZE LIST -->
+        <div class="panel" id="panel-prizes">
+            <div class="panel-header"><h2>Prize List</h2><p>Live published results</p></div>
+            <div id="prize-list-content"></div>
+        </div>
+
+        <!-- EXPORT -->
+        <div class="panel" id="panel-export">
+            <div class="panel-header"><h2>Export Results</h2><p>Generate a full summary report</p></div>
+            <div class="card">
+                <div class="card-title">Summary Report</div>
+                <div style="display:flex;gap:10px;margin-bottom:18px;">
+                    <button class="btn btn-primary" id="gen-export-btn"><i data-lucide="file-text"></i> Generate</button>
+                    <button class="btn btn-ghost" id="print-btn"><i data-lucide="printer"></i> Print</button>
+                </div>
+                <div class="export-preview" id="export-preview">Click "Generate" to view the results summary.</div>
+            </div>
+        </div>
+
+        <!-- EDIT EVENTS (Admin Only) -->
+        <div class="panel" id="panel-edit-events">
+            <div class="panel-header"><h2>Edit Events</h2><p>Add, edit or remove events from the master list</p></div>
+            <div id="edit-events-content"></div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ADD/EDIT EVENT MODAL -->
+<div class="modal-overlay" id="event-modal">
+    <div class="modal-box">
+        <h3 id="modal-title">Add Event</h3>
+        <div style="display:flex;flex-direction:column;gap:13px;">
+            <div class="form-group"><label>Event Name</label><input type="text" id="em-name" placeholder="e.g. Foot Loose (Solo)"></div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="em-category">
+                    <option>On Stage</option><option>Off Stage</option><option>Ceremony</option><option>Break</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Time</label><input type="text" id="em-time" placeholder="e.g. 10:00 AM"></div>
+            <div class="form-group"><label>Venue</label><input type="text" id="em-venue" placeholder="e.g. Main Stage"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-primary" id="modal-save-btn"><i data-lucide="save"></i> Save</button>
+            <button class="btn btn-ghost" id="modal-cancel-btn"><i data-lucide="x"></i> Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT WINNER MODAL -->
+<div class="modal-overlay" id="winner-edit-modal">
+    <div class="modal-box" style="width:min(560px,94vw);">
+        <h3>Edit Winner — <span id="we-event" style="color:var(--secondary);"></span></h3>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+            <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;padding:8px 0 4px;border-top:1px solid var(--border);">🥇 1st Prize</div>
+            <div class="form-grid">
+                <div class="form-group"><label>Name</label><input type="text" id="we-p1n" placeholder="Full name"></div>
+                <div class="form-group"><label>College</label><input type="text" id="we-p1c" placeholder="College name"></div>
+            </div>
+            <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;padding:8px 0 4px;border-top:1px solid var(--border);">🥈 2nd Prize</div>
+            <div class="form-grid">
+                <div class="form-group"><label>Name</label><input type="text" id="we-p2n" placeholder="Full name"></div>
+                <div class="form-group"><label>College</label><input type="text" id="we-p2c" placeholder="College name"></div>
+            </div>
+            <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;padding:8px 0 4px;border-top:1px solid var(--border);">🥉 3rd Prize</div>
+            <div class="form-grid">
+                <div class="form-group"><label>Name</label><input type="text" id="we-p3n" placeholder="Full name"></div>
+                <div class="form-group"><label>College</label><input type="text" id="we-p3c" placeholder="College name"></div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-primary" id="we-save-btn"><i data-lucide="save"></i> Save Changes</button>
+            <button class="btn btn-ghost" id="we-cancel-btn"><i data-lucide="x"></i> Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════
+// Constants & State
+// ═══════════════════════════
+const STORAGE_KEY   = 'odyssey2k26_winners';
+const EVENTS_KEY    = 'odyssey2k26_events';
+const IS_ADMIN      = localStorage.getItem('odyssey_admin_auth') === 'true';
+
+const DEFAULT_EVENTS = [
+    { name: 'Inauguration',         category: 'Ceremony',   time: '9:00 AM',  venue: 'Main Auditorium' },
+    { name: 'Mind Marathon',         category: 'On Stage',   time: '9:30 AM',  venue: 'Seminar Hall' },
+    { name: 'Melody Mania (Solo)',   category: 'On Stage',   time: '10:15 AM', venue: 'Main Stage' },
+    { name: 'Melody Mania (Team)',   category: 'On Stage',   time: '11:00 AM', venue: 'Main Stage' },
+    { name: 'Pixel Hunt',            category: 'Off Stage',  time: '11:45 AM', venue: 'Campus Area' },
+    { name: 'Henna Harmony',         category: 'Off Stage',  time: '12:15 PM', venue: 'Art Hall' },
+    { name: 'Lunch Break',           category: 'Break',      time: '1:00 PM',  venue: 'Cafeteria' },
+    { name: 'Foot Loose (Solo)',     category: 'On Stage',   time: '2:00 PM',  venue: 'Main Stage' },
+    { name: 'Foot Loose (Team)',     category: 'On Stage',   time: '2:45 PM',  venue: 'Main Stage' },
+    { name: 'Elite Walk',            category: 'On Stage',   time: '3:30 PM',  venue: 'Auditorium' },
+    { name: 'Hue and You',           category: 'Off Stage',  time: '4:00 PM',  venue: 'Art Room' },
+    { name: 'Junk Yard',             category: 'Off Stage',  time: '4:30 PM',  venue: 'Workshop Hall' },
+    { name: 'Art Arena',             category: 'Off Stage',  time: '5:00 PM',  venue: 'Art Room' },
+    { name: 'Prize Distribution',    category: 'Ceremony',   time: '5:45 PM',  venue: 'Main Stage' },
+];
+
+function getEvents()  { const s=localStorage.getItem(EVENTS_KEY); return s?JSON.parse(s):DEFAULT_EVENTS.map(e=>({...e})); }
+function saveEvents(e){ localStorage.setItem(EVENTS_KEY,JSON.stringify(e)); }
+function getWinners() { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }
+
+// ═══════════════════════════
+// Admin UI Bootstrap
+// ═══════════════════════════
+(function bootstrap() {
+    const topRight = document.getElementById('topbar-right');
+
+    if (IS_ADMIN) {
+        // Show Admin badge
+        const badge = document.createElement('div');
+        badge.className = 'badge badge-admin';
+        badge.innerHTML = '<span class="dot"></span> Admin';
+        topRight.insertBefore(badge, topRight.firstChild);
+
+        // Logout button
+        const logoutBtn = document.createElement('button');
+        logoutBtn.className = 'btn btn-ghost';
+        logoutBtn.style.cssText = 'padding:7px 13px;font-size:0.8rem;';
+        logoutBtn.innerHTML = '<i data-lucide="log-out"></i> Logout';
+        logoutBtn.addEventListener('click', () => {
+            if (confirm('Logout from admin session?')) {
+                localStorage.removeItem('odyssey_admin_auth');
+                location.reload();
+            }
+        });
+        topRight.insertBefore(logoutBtn, topRight.lastElementChild);
+
+        // Show admin-only sidebar items
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+    } else {
+        // Lock the Register Winner sidebar button
+        const btn = document.getElementById('register-btn');
+        btn.innerHTML = '<i data-lucide="lock"></i> Register Winner';
+        btn.classList.add('locked');
+    }
+})();
+
+// ═══════════════════════════
+// Navigation
+// ═══════════════════════════
+document.querySelectorAll('.sidebar-btn[data-panel]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+        renderPanel(btn.dataset.panel);
+    });
+});
+
+function renderPanel(name) {
+    const map = {
+        dashboard:    renderDashboard,
+        prizes:       renderPrizes,
+        'edit-events':renderEditEvents
+    };
+    if (map[name]) map[name]();
+}
+
+// ═══════════════════════════
+// Dashboard
+// ═══════════════════════════
+function renderDashboard() {
+    const events  = getEvents();
+    const winners = getWinners();
+    const total   = events.filter(e => e.category!=='Ceremony' && e.category!=='Break').length;
+    const pub     = winners.length;
+    const now     = new Date();
+    const target  = new Date('2026-03-26');
+    const days    = Math.max(0, Math.ceil((target - now) / 86400000));
+
+    document.getElementById('stats-row').innerHTML = `
+        <div class="stat-card c-blue"><div class="num">${total}</div><div class="lbl">Total Events</div></div>
+        <div class="stat-card c-green"><div class="num">${pub}</div><div class="lbl">Published</div></div>
+        <div class="stat-card c-red"><div class="num">${total - pub}</div><div class="lbl">Pending</div></div>
+        <div class="stat-card c-purple"><div class="num">${days}</div><div class="lbl">Days to Go</div></div>
+    `;
+
+    const el = document.getElementById('dashboard-latest');
+    if (winners.length === 0) {
+        el.innerHTML = `<div class="empty-state"><i data-lucide="inbox"></i><h3>No results yet</h3><p>Results will appear here once published.</p></div>`;
+    } else {
+        el.innerHTML = [...winners].reverse().slice(0,4).map(w => `
+            <div class="prize-block">
+                <div class="prize-block-title">${w.eventName}</div>
+                ${prizeLine(w.prize1Name,w.prize1College,'🥇')}
+                ${prizeLine(w.prize2Name,w.prize2College,'🥈')}
+                ${prizeLine(w.prize3Name,w.prize3College,'🥉')}
+            </div>`).join('');
+    }
+    lucide.createIcons();
+}
+
+// Results are displayed in the Prize List panel
+
+
+// ═══════════════════════════
+// Prize List
+// ═══════════════════════════
+function renderPrizes() {
+    const winners = getWinners();
+    const c = document.getElementById('prize-list-content');
+
+    if (winners.length === 0) {
+        c.innerHTML = `<div class="card"><div class="empty-state"><i data-lucide="award"></i><h3>No results published yet</h3><p>Use "Register Winner" to add results.</p></div></div>`;
+        lucide.createIcons();
+        return;
+    }
+
+    // Admin: show a header with clear-all button
+    const adminHeader = IS_ADMIN
+        ? `<div class="card" style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;">
+               <span style="color:var(--secondary);font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;">🏆 Winners Registry — Admin Edit Mode</span>
+               <button class="btn btn-danger btn-sm" id="clear-all-results-btn"><i data-lucide="trash-2"></i> Clear All</button>
+           </div>`
+        : '';
+
+    c.innerHTML = adminHeader + winners.map((w, idx) => `
+        <div class="card" style="margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+                <div class="card-title" style="margin-bottom:0;">${w.eventName}</div>
+                ${IS_ADMIN ? `<div style="display:flex;gap:7px;">
+                    <button class="btn btn-ghost btn-sm" onclick="editWinner(${idx})"><i data-lucide="pencil"></i> Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteWinner(${idx})"><i data-lucide="trash-2"></i></button>
+                </div>` : ''}
+            </div>
+            ${prizeLine(w.prize1Name, w.prize1College, '🥇')}
+            ${prizeLine(w.prize2Name, w.prize2College, '🥈')}
+            ${prizeLine(w.prize3Name, w.prize3College, '🥉')}
+        </div>`).join('');
+
+    lucide.createIcons();
+
+    if (IS_ADMIN) {
+        document.getElementById('clear-all-results-btn').addEventListener('click', () => {
+            if (confirm('Delete ALL published results? This cannot be undone.')) {
+                localStorage.removeItem(STORAGE_KEY);
+                renderPrizes();
+                renderDashboard();
+            }
+        });
+    }
+}
+
+window.deleteWinner = function(idx) {
+    if (confirm('Remove this event result from the registry?')) {
+        const winners = getWinners();
+        winners.splice(idx, 1);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(winners));
+        renderPrizes();
+        renderDashboard();
+    }
+};
+
+window.editWinner = function(idx) {
+    const w = getWinners()[idx];
+    // Open the winner edit modal
+    const modal = document.getElementById('winner-edit-modal');
+    document.getElementById('we-event').textContent  = w.eventName;
+    document.getElementById('we-p1n').value  = w.prize1Name  === '—' ? '' : w.prize1Name;
+    document.getElementById('we-p1c').value  = w.prize1College === '—' ? '' : w.prize1College;
+    document.getElementById('we-p2n').value  = w.prize2Name  === '—' ? '' : w.prize2Name;
+    document.getElementById('we-p2c').value  = w.prize2College === '—' ? '' : w.prize2College;
+    document.getElementById('we-p3n').value  = w.prize3Name  === '—' ? '' : w.prize3Name;
+    document.getElementById('we-p3c').value  = w.prize3College === '—' ? '' : w.prize3College;
+    modal.dataset.editIdx = idx;
+    modal.classList.add('open');
+    lucide.createIcons();
+};
+
+function prizeLine(name, college, medal) {
+    if (!name || name === '—') return '';
+    return `<div class="prize-row">
+        <div class="prize-medal">${medal}</div>
+        <div class="prize-info"><div class="p-name">${name}</div><div class="p-college">${college||'—'}</div></div>
+    </div>`;
+}
+
+// ═══════════════════════════
+// Export
+// ═══════════════════════════
+document.getElementById('gen-export-btn').addEventListener('click', () => {
+    const winners = getWinners();
+    const events  = getEvents();
+    const total   = events.filter(e => e.category!=='Ceremony' && e.category!=='Break').length;
+    const now     = new Date().toLocaleString();
+
+    let r = `═══════════════════════════════════════════════\n  ODYSSEY 2K26 — RESULTS SUMMARY\n  Marthandam College of Engineering and Technology\n  Generated: ${now}\n═══════════════════════════════════════════════\n\n`;
+    if (winners.length === 0) {
+        r += '  No results published yet.\n';
+    } else {
+        winners.forEach(w => {
+            r += `\n  EVENT: ${w.eventName.toUpperCase()}\n  ${'─'.repeat(38)}\n`;
+            if (w.prize1Name!=='—') r += `  🥇  ${w.prize1Name.padEnd(24)} ${w.prize1College}\n`;
+            if (w.prize2Name!=='—') r += `  🥈  ${w.prize2Name.padEnd(24)} ${w.prize2College}\n`;
+            if (w.prize3Name!=='—') r += `  🥉  ${w.prize3Name.padEnd(24)} ${w.prize3College}\n`;
+        });
+    }
+    r += `\n${'═'.repeat(47)}\n  Total Events : ${total}\n  Published    : ${winners.length}\n  Pending      : ${total - winners.length}\n${'═'.repeat(47)}\n`;
+    document.getElementById('export-preview').textContent = r;
+});
+
+document.getElementById('print-btn').addEventListener('click', () => window.print());
+
+// ═══════════════════════════
+// Edit Events (Admin Only)
+// ═══════════════════════════
+let editingIndex = -1;
+
+function renderEditEvents() {
+    const c = document.getElementById('edit-events-content');
+
+    if (!IS_ADMIN) {
+        c.innerHTML = `<div class="card"><div class="lock-screen">
+            <div class="lock-icon-wrap"><i data-lucide="lock"></i></div>
+            <h3>Admin Access Required</h3>
+            <p>Only administrators can edit the event list.</p>
+            <a href="login.html" class="btn btn-primary" style="margin-top:6px;"><i data-lucide="log-in"></i> Login as Admin</a>
+        </div></div>`;
+        lucide.createIcons();
+        return;
+    }
+
+    const evs = getEvents();
+    c.innerHTML = `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div class="card-title" style="margin-bottom:0;">📋 Event List (${evs.length} events)</div>
+            <div style="display:flex;gap:9px;">
+                <button class="btn btn-primary" id="add-event-btn"><i data-lucide="plus"></i> Add Event</button>
+                <button class="btn btn-danger" id="reset-events-btn"><i data-lucide="rotate-ccw"></i> Reset Default</button>
+            </div>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="styled-table">
+                <thead><tr><th>#</th><th>Event Name</th><th>Category</th><th>Time</th><th>Venue</th><th style="text-align:center">Actions</th></tr></thead>
+                <tbody>
+                    ${evs.map((e,i) => `<tr>
+                        <td>${i+1}</td>
+                        <td><strong>${e.name}</strong></td>
+                        <td>${e.category}</td>
+                        <td>${e.time}</td>
+                        <td>${e.venue}</td>
+                        <td style="text-align:center;white-space:nowrap;">
+                            <button class="btn btn-ghost btn-sm" onclick="openEditModal(${i})"><i data-lucide="pencil"></i></button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteEvent(${i})"><i data-lucide="trash-2"></i></button>
+                        </td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>`;
+
+    lucide.createIcons();
+
+    document.getElementById('add-event-btn').addEventListener('click', () => openAddModal());
+    document.getElementById('reset-events-btn').addEventListener('click', () => {
+        if (confirm('Reset to default event list? All custom changes will be lost.')) {
+            localStorage.removeItem(EVENTS_KEY);
+            renderEditEvents();
+        }
+    });
+}
+
+function openAddModal() {
+    editingIndex = -1;
+    document.getElementById('modal-title').textContent = 'Add New Event';
+    document.getElementById('em-name').value = '';
+    document.getElementById('em-category').value = 'On Stage';
+    document.getElementById('em-time').value = '';
+    document.getElementById('em-venue').value = '';
+    document.getElementById('event-modal').classList.add('open');
+}
+
+window.openEditModal = function(i) {
+    editingIndex = i;
+    const e = getEvents()[i];
+    document.getElementById('modal-title').textContent = 'Edit Event';
+    document.getElementById('em-name').value = e.name;
+    document.getElementById('em-category').value = e.category;
+    document.getElementById('em-time').value = e.time;
+    document.getElementById('em-venue').value = e.venue;
+    document.getElementById('event-modal').classList.add('open');
+};
+
+window.deleteEvent = function(i) {
+    if (confirm('Delete this event from the list?')) {
+        const evs = getEvents();
+        evs.splice(i, 1);
+        saveEvents(evs);
+        renderEditEvents();
+        renderDashboard();
+    }
+};
+
+document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+    document.getElementById('event-modal').classList.remove('open');
+});
+
+document.getElementById('modal-save-btn').addEventListener('click', () => {
+    const name     = document.getElementById('em-name').value.trim();
+    const category = document.getElementById('em-category').value;
+    const time     = document.getElementById('em-time').value.trim();
+    const venue    = document.getElementById('em-venue').value.trim();
+    if (!name || !time || !venue) { alert('Please fill in all fields.'); return; }
+
+    const evs = getEvents();
+    const newEvent = { name, category, time, venue };
+    if (editingIndex >= 0) evs[editingIndex] = newEvent;
+    else evs.push(newEvent);
+
+    saveEvents(evs);
+    document.getElementById('event-modal').classList.remove('open');
+    lucide.createIcons();
+    renderEditEvents();
+    renderDashboard();
+});
+
+// ═══════════════════════════
+// Winner Edit Modal Handler
+// ═══════════════════════════
+document.getElementById('we-cancel-btn').addEventListener('click', () => {
+    document.getElementById('winner-edit-modal').classList.remove('open');
+});
+
+document.getElementById('we-save-btn').addEventListener('click', () => {
+    const modal = document.getElementById('winner-edit-modal');
+    const idx = parseInt(modal.dataset.editIdx);
+    const winners = getWinners();
+    const w = winners[idx];
+    if (!w) return;
+
+    w.prize1Name    = document.getElementById('we-p1n').value.trim() || '—';
+    w.prize1College = document.getElementById('we-p1c').value.trim() || '—';
+    w.prize2Name    = document.getElementById('we-p2n').value.trim() || '—';
+    w.prize2College = document.getElementById('we-p2c').value.trim() || '—';
+    w.prize3Name    = document.getElementById('we-p3n').value.trim() || '—';
+    w.prize3College = document.getElementById('we-p3c').value.trim() || '—';
+    w.timestamp     = new Date().toISOString();
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(winners));
+    modal.classList.remove('open');
+    renderPrizes();
+    renderDashboard();
+});
+
+// ═══════════════════════════
+// Init
+// ═══════════════════════════
+renderDashboard();
+lucide.createIcons();
+</script>
+</body>
+</html>
